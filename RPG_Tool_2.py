@@ -8,6 +8,11 @@ import tkinter as tk
 import os
 from tkinter.font import Font
 
+'''
+PRIMARY BRANCH
+
+This is the primary branch of the RPG Tool.
+'''
 
 root = tk.Tk()
 home_path = os.getcwd()
@@ -31,11 +36,13 @@ class AddChar(tk.Toplevel):
 
 	def __init__(self,parent):
 		'''
-		The constructor for the player window. It runs as a child of the root instance of tk.Tk().
+		The constructor for the player window. It runs as a child of whatever is passed as the parent.
 		'''
 
+		#Inherets from tk.Toplevel
 		tk.Toplevel.__init__(self,parent)
 
+		#defining the 'top'
 		top = self.winfo_toplevel()
 		top.columnconfigure(0, weight=1)
 		top.rowconfigure(0, weight=1)
@@ -47,6 +54,7 @@ class AddChar(tk.Toplevel):
 		#self.rowconfigure(1,weight=1)
 		#self.columnconfigure(1,weight=1)
 
+		#Setting 'top' characteristics
 		self.title('Add Character')
 		self.geometry('250x200+600+200')
 		self.tk.call('wm','iconphoto',self._w,photo)
@@ -55,13 +63,15 @@ class AddChar(tk.Toplevel):
 		self.lift(aboveThis=parent)
 		self.focus()
 
+		#Building the new Frame object
 		self.top_frame = tk.Frame(self)
 
+		#Defining frame characteristics
 		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
 		self.top_frame.rowconfigure(4,weight=1)
 		self.top_frame.columnconfigure(4,weight=1)
 
-
+		#Adding labels and Entries
 		self.name = tk.Label(self.top_frame,text='Name')
 		self.type = tk.Label(self.top_frame,text='Type')
 		self.focus = tk.Label(self.top_frame,text='Focus')
@@ -135,8 +145,9 @@ class MainMenu(tk.Menu):
 
 		#Creating the 'Campaign' submenu
 		parent.campaign = tk.Menu(parent.menuBar, tearoff=0, font=menu_font)
-		parent.campaign.add_command(label='Edit Character...', command=None)
-		parent.campaign.add_command(label='Add Character...', command= lambda : AddChar(parent))
+		parent.campaign.add_command(label='Edit Character...', command= lambda : EditChar(parent))#The command is a lambda so I can pass the 'Application' class as the parent.
+		parent.campaign.add_command(label='Add Character...', command= lambda : AddChar(parent)) #The command here is a Lambda function so the AddChar isn't called at the startup of the script.
+		#Could also use 'command = AddChar' without parenths.
 		parent.campaign.add_command(label='Remove Character', command=None)
 		parent.campaign.add_separator()
 		parent.campaign.add_command(label='Export Character...', command=None)
