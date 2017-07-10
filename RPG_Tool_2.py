@@ -29,6 +29,169 @@ menu_font = Font(family = 'Segoe UI', size = 9)
 This sets the fonts used in the application as global variables.
 '''
 
+class player_handler():
+	'''
+	Handles all player additions, subtractions, edits, and deletions.
+	'''
+
+	def __init__(self,parent):
+		'''
+		Builds all of the handler componenets.
+		'''
+
+		#Defining the character dictionary.
+		self.character_dict = {}
+
+	def add_player(self,tuple):
+		'''
+		Takes the first entry of the passed tuple and adds an entry to character_dict of the form ('entry0' : tuple) so the 'name' entry is the key and the tuple is the value.
+		'''
+
+		name = str(tuple[0])
+		self.character_dict[name] = tuple
+
+	def get_keys(self):
+		'''
+		Returns the keys of the character dictionary in alphabetical order
+		'''
+
+		char_keys = sorted(self.character_dict.keys())
+		return char_keys
+
+	def get_entry(self,key):
+		'''
+		Returns an entry in character_dict that corresponds to the key that is passed as an argument
+		'''
+		strkey = str(key)
+		char_tup = self.character_dict[strkey]
+
+		return char_tup
+
+class EditChar(tk.Toplevel):
+	'''
+	Builds the new top-level window for editing a specific character
+	'''
+
+	def __init__(self,parent):
+		'''
+		The constructor for the edit window. It runs as a child of whatever is passed as the parent.
+		'''
+
+		#Inherets from tk.Toplevel
+		tk.Toplevel.__init__(self,parent)
+
+		#defining the 'top'
+		top = self.winfo_toplevel()
+		top.columnconfigure(0, weight=1)
+		top.rowconfigure(0, weight=1)
+
+		#Setting 'top' characteristics
+		self.title('Add Character')
+		self.geometry('300x250+600+200')
+		self.tk.call('wm','iconphoto',self._w,photo)
+
+		self.transient()
+		self.lift(aboveThis=parent)
+		self.focus()
+
+		#Building the new Frame object
+		self.top_frame = tk.Frame(self)
+
+		#Defining frame characteristics
+		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
+		self.top_frame.rowconfigure(5,weight=1)
+		self.top_frame.columnconfigure(5,weight=1)
+
+		#Setting things up for the Option Menu
+		chars = parent.player_handler.get_keys()
+		chars.insert(0, 'Select Character')
+		self.char_var = tk.StringVar()
+		self.char_var.set(chars[0])
+
+		#Adding the Option Menu
+		self.options = tk.OptionMenu(self.top_frame, self.char_var, *chars, command = lambda _:self.set_entries(parent))
+		self.options.config(bg = '#fff')
+
+		#Adding labels and Entries
+		self.name = tk.Label(self.top_frame,text='Name')
+		self.type = tk.Label(self.top_frame,text='Type')
+		self.focus = tk.Label(self.top_frame,text='Focus')
+
+		self.entry_name = tk.Entry(self.top_frame,state='disabled')
+		self.entry_type = tk.Entry(self.top_frame,state='disabled')
+		self.entry_focus = tk.Entry(self.top_frame,state='disabled')
+
+		#Adding the button at the bottom
+		self.button = tk.Button(self.top_frame,text='Save Changes',command= lambda : self.push_changes(parent))	
+
+		#Aligning all widgets to the grid
+		self.options.grid(row=0,column=0,columnspan=2,padx=5,pady=5)
+
+		self.name.grid(row=1,column=0,padx=5,pady=5)
+		self.type.grid(row=2,column=0,padx=5,pady=5)
+		self.focus.grid(row=3,column=0,padx=5,pady=5)
+
+		self.entry_name.grid(row=1,column=1,padx=5,pady=5)
+		self.entry_type.grid(row=2,column=1,padx=5,pady=5)
+		self.entry_focus.grid(row=3,column=1,padx=5,pady=5)
+
+		self.button.grid(row=4,column=0,columnspan=2,padx=5,pady=5)
+
+	def push_changes(self,parent):
+		'''
+		Pushes all edits to the character dictionary
+		'''
+
+		'''
+		TODO:
+			- Add confirmation pop-up before push is completed
+			- Add 'change buffer' so ctrl+z can undo an edit
+			- Add 'change confirmation' redundancy to disable the button if no changes are detected.
+		'''
+		return
+
+	def set_entries(self,parent):
+		'''
+		This updates all of the entry widgets each time the option menu is accessed/changed.
+		'''
+
+		#Getting the current Selection
+		selection = str(self.char_var.get())
+
+		#Setting all of the entry widgets
+		if selection != 'Select Character':
+			char_tup = parent.player_handler.get_entry(selection)
+
+			#If the key submitted isn't the 'dummy key', then the entries will be enabled and will display the stats of the character selected.
+			cont_1 = tk.StringVar()
+			cont_1.set(char_tup[0])
+
+			cont_2 = tk.StringVar()
+			cont_2.set(char_tup[1])
+
+			cont_3 = tk.StringVar()
+			cont_3.set(char_tup[2])
+
+			self.entry_name.config(textvariable=cont_1,state='normal')
+			self.entry_type.config(textvariable=cont_2,state='normal')
+			self.entry_focus.config(textvariable=cont_3,state='normal')
+
+		else:
+
+			#Otherwise, the entry widgets will display nothing and the widgets will be disabled.
+			control = tk.StringVar()
+			control.set('')
+
+			self.entry_name.config(textvariable=control)
+			self.entry_type.config(textvariable=control)
+			self.entry_focus.config(textvariable=control)
+
+			self.entry_name.config(state='disabled')
+			self.entry_type.config(state='disabled')
+			self.entry_focus.config(state='disabled')
+
+
+
 class AddChar(tk.Toplevel):
 	'''
 	Builds the new top-level window for the character addition window
@@ -80,8 +243,10 @@ class AddChar(tk.Toplevel):
 		self.entry_type = tk.Entry(self.top_frame)
 		self.entry_focus = tk.Entry(self.top_frame)
 
-		self.button = tk.Button(self.top_frame,text='Add Character',command=None)		
+		#Adding the button at the bottom
+		self.button = tk.Button(self.top_frame,text='Add Character',command= lambda : self.complete(parent)) #Command here is a Lambda so I can pass a tuple as an argument.	
 
+		#Aligning all widgets to the grid
 		self.name.grid(row=0,column=0,padx=5,pady=5)
 		self.type.grid(row=1,column=0,padx=5,pady=5)
 		self.focus.grid(row=2,column=0,padx=5,pady=5)
@@ -90,7 +255,32 @@ class AddChar(tk.Toplevel):
 		self.entry_type.grid(row=1,column=1,padx=5,pady=5)
 		self.entry_focus.grid(row=2,column=1,padx=5,pady=5)
 
-		self.button.grid(row=3,column=0,columnspan=2,padx=5,pady=5)			
+		self.button.grid(row=3,column=0,columnspan=2,padx=5,pady=5)
+
+	def build_tuple(self):
+		'''
+		Constructs the tuple of form (name,type,focus) and returns it.
+		'''
+
+		charname = str(self.entry_name.get())
+		chartype = str(self.entry_type.get())
+		charfocus = str(self.entry_focus.get())
+
+		chartuple = (charname, chartype, charfocus)
+
+		return chartuple
+
+	def complete(self,parent):
+		'''
+		Completes the purpose of the window
+		'''
+
+		#Add the tuple to the character dictionary
+		parent.player_handler.add_player(self.build_tuple())
+
+		#Kills the window
+		self.destroy()
+
 
 class Canvas(tk.Canvas):
 	'''
@@ -239,12 +429,11 @@ class Application(tk.Frame):
 		self.rowconfigure(1, weight=1)
 		self.columnconfigure(1, weight=1)
         
-		self.entry_dict = {}
-		self.character_dict = {}
-        
 		self.canvas = Canvas(self,1,1)
 		self.menu = MainMenu(self)
 		self.info = InfoColumn(self,1,0)
+
+		self.player_handler = player_handler(self)
 
 		#self.info.get_labeldict
 
