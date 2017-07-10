@@ -144,6 +144,7 @@ class EditChar(tk.Toplevel):
 
 		'''
 		TODO:
+			- Finish the 'EditChar' class by making this command actually puch changes to player_handler
 			- Add confirmation pop-up before push is completed
 			- Add 'change buffer' so ctrl+z can undo an edit
 			- Add 'change confirmation' redundancy to disable the button if no changes are detected.
@@ -209,13 +210,6 @@ class AddChar(tk.Toplevel):
 		top = self.winfo_toplevel()
 		top.columnconfigure(0, weight=1)
 		top.rowconfigure(0, weight=1)
-
-		'''
-		The following shouldn't be getting an "unexpected argument" error on 'grid' command.
-		'''
-		#self.grid(sticky=tk.N+tk.E+tk.S+tk.W)
-		#self.rowconfigure(1,weight=1)
-		#self.columnconfigure(1,weight=1)
 
 		#Setting 'top' characteristics
 		self.title('Add Character')
@@ -353,10 +347,11 @@ class MainMenu(tk.Menu):
 		parent.menuBar.add_cascade(label='File', menu=parent.file)
 		parent.menuBar.add_cascade(label='Edit', menu=parent.edit)
 		parent.menuBar.add_cascade(label='Campaign', menu=parent.campaign)
+		parent.menuBar.add_cascade(label='Test', menu=parent.test)
 
 		'''
 		FUTURE:
-			- Multi-System Support? Can this be built into the design without needing a whole new Charaacter Creation page?
+			- Multi-System Support (ie, D&D, etc)? Can this be built into the design without needing a whole new Charaacter Creation page?
 		'''
 
 class InfoColumn(tk.Frame):
@@ -435,8 +430,6 @@ class Application(tk.Frame):
 
 		self.player_handler = player_handler(self)
 
-		#self.info.get_labeldict
-
 def main():
     
     app = Application(root)
@@ -458,7 +451,8 @@ Mechanical Stuff
 		Is all player stats necessary?
 		Could we generalize the whole application to use just the following
 			Name, Age, Level, Alignment?
-	Add Player Manager to add and remove players from the player dictionary
+	DONE: Add Player Manager to add players from the character_dict
+	Player_handler needs to be able to remove players from the character_dict
 	Add Canvas writing handler for all new characters
 	Add Save/Load support
 
