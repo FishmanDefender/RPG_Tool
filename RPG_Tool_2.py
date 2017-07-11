@@ -89,6 +89,13 @@ class Edit_warn(tk.Toplevel):
 		self.duplicate.grid(row=1,column=1,padx=5,pady=5)
 		self.cancel.grid(row=1,column=2,padx=5,pady=5)
 
+		'''
+		TODO:
+			- Impliment Edit_warn inside the EditChar class.
+			- NOTE: The player_handler class check_dict cannot be edited since it's used in AddChar
+			- TEST!! (This class is untested!)
+		'''
+
 class player_handler():
 	'''
 	Handles all player additions, subtractions, edits, and deletions.
