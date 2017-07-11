@@ -14,6 +14,14 @@ PRIMARY BRANCH
 This is the primary branch of the RPG Tool.
 '''
 
+'''
+All TAGS:
+	- TODO: Header denotes comment sections that list elements that still must be added or features that need to be completed.
+	- FUTURE: Header denotes comment sections that list potential future expansions of the code (after 1.0 stable release)
+	- EFFICIENCY: Header denotes comment sections that deal with code efficiency
+	- DONE: Used to denote a subline comment, typically in a 'TODO' block, that has been completed.
+'''
+
 root = tk.Tk()
 home_path = os.getcwd()
 os.chdir(home_path+'\images')
@@ -21,13 +29,65 @@ photo = tk.PhotoImage(file = 'knight.gif')
 os.chdir(home_path)
 '''
 This program has two global variables:
-home_path: This is the path to the location of RPG_Tool.py
-photo: This is the logo photo 'knight.gif' that is used as the logo for all windows
+	- home_path: This is the path to the location of RPG_Tool.py
+	- photo: This is the logo photo 'knight.gif' that is used as the logo for all windows
 '''
 menu_font = Font(family = 'Segoe UI', size = 9)
 '''
 This sets the fonts used in the application as global variables.
 '''
+
+class Edit_warn(tk.Toplevel):
+	'''
+	Creates a transient, top-level window that interupts the edit-push process of EditChar. It gives the user options to overwrite, iterate, or cancel the edit action.
+	'''
+
+	def __init__(self,parent,key):
+		'''
+		Constructs the new top-level componenet
+		'''
+
+		#Inherets from tk.Toplevel
+		tk.Toplevel.__init__(self,parent)
+
+		#defining the 'top'
+		top = self.winfo_toplevel()
+		top.columnconfigure(0, weight=1)
+		top.rowconfigure(0, weight=1)
+
+		#Setting 'top' characteristics
+		self.title('Add Character')
+		self.geometry('300x250+600+200')
+		self.tk.call('wm','iconphoto',self._w,photo)
+
+		self.transient()
+		self.lift(aboveThis=parent)
+		self.focus()
+
+		#Grabbing the focus(??). Supposed to make it so the dialogue box MUST be answered before continuing.
+		self.grab_set()
+
+		#Building the new Frame object
+		self.top_frame = tk.Frame(self)
+
+		#Defining frame characteristics
+		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
+		self.top_frame.rowconfigure(5,weight=1)
+		self.top_frame.columnconfigure(5,weight=1)
+
+		#Building the 'warning message' widget
+		self.warn_msg = tk.Message(text='The following action will overwrite '+str(key)+'!'+'\nAre you sure you want to continue?',justify=tk.CENTER)
+
+		#Building option buttons
+		self.overwrite = tk.Button(text='Overwrite', command=None)
+		self.duplicate = tk.Button(text='Duplicate', command=None)
+		self.cancel = tk.Button(text='Cancel', command=None)
+
+		#Adding everything to grid manager
+		self.warn_msg.grid(row=0,column=0,rowspan=2,columnspan=3,padx=5,pady=5)
+		self.overwrite.grid(row=1,column=0,padx=5,pady=5)
+		self.duplicate.grid(row=1,column=1,padx=5,pady=5)
+		self.cancel.grid(row=1,column=2,padx=5,pady=5)
 
 class player_handler():
 	'''
@@ -41,6 +101,9 @@ class player_handler():
 
 		#Defining the character dictionary.
 		self.character_dict = {}
+
+		#Iteration dictionary for name equivelence
+		self.it_dict = {}
 
 	def add_player(self,tuple):
 		'''
@@ -56,6 +119,7 @@ class player_handler():
 		'''
 
 		char_keys = sorted(self.character_dict.keys())
+		print (char_keys)
 		return char_keys
 
 	def get_entry(self,key):
@@ -66,6 +130,54 @@ class player_handler():
 		char_tup = self.character_dict[strkey]
 
 		return char_tup
+
+	def set_entry(self,oldkey,newkey,tuple):
+		'''
+		Delets the entry assigned to oldkey and enters a player tuple assigned to newkey. If oldkey == newkey, then the entry is merely replaced.
+		'''
+
+		if oldkey == newkey:
+			self.character_dict[str(oldkey)] = tuple
+		else:
+			del self.character_dict[str(oldkey)]
+			self.character_dict[str(newkey)] = tuple
+
+	def check_dict(self,key):
+		'''
+		Checks all keys currently in the character_dict and checks to see if any are identical to the passed key. If an identity equivelence is found, then (i) is appended to the end of the name (where i is an int) and i is iterated by 1.
+		'''
+		#Gets all current keys
+		char_keys = self.get_keys()
+
+		#Checking for equivelence
+		if key in char_keys:
+
+			#If a match is found, tries to get the current iteration dictionary for the name
+			try:
+
+				it = self.it_dict[key]
+				it = it+1
+				self.it_dict[key] = it
+
+			#If the key isn't in the dictionary, a KeyError is thrown and, when caught, creates a new it_dict entry with it = 0
+			except KeyError:
+
+				it = 0
+				self.it_dict[key] = it
+
+			#Append (it) to end of key; returns key
+			newkey = key + ' (' + str(it) +')'
+			return newkey
+
+		else:
+			#If no match is found, it returns the original key
+			return key
+
+		'''
+		TODO:
+			- Add the check_dict method to AddChar class
+			- Since this returns a key, return handling shouldn't need editing
+		'''
 
 class EditChar(tk.Toplevel):
 	'''
@@ -122,7 +234,7 @@ class EditChar(tk.Toplevel):
 		self.entry_focus = tk.Entry(self.top_frame,state='disabled')
 
 		#Adding the button at the bottom
-		self.button = tk.Button(self.top_frame,text='Save Changes',command= lambda : self.push_changes(parent))	
+		self.button = tk.Button(self.top_frame,text='Save Changes',state='disabled',command= lambda : self.push_changes(parent))	
 
 		#Aligning all widgets to the grid
 		self.options.grid(row=0,column=0,columnspan=2,padx=5,pady=5)
@@ -137,19 +249,45 @@ class EditChar(tk.Toplevel):
 
 		self.button.grid(row=4,column=0,columnspan=2,padx=5,pady=5)
 
+	def build_tuple(self):
+		'''
+		Constructs the tuple of form (name,type,focus) and returns it. This was copied from AddChar since the process to 'edit' character_dict is just to replace the entry with a new tuple.
+		'''
+
+		charname = str(self.entry_name.get())
+		chartype = str(self.entry_type.get())
+		charfocus = str(self.entry_focus.get())
+
+		chartuple = (charname, chartype, charfocus)
+
+		return chartuple
+
+
 	def push_changes(self,parent):
 		'''
 		Pushes all edits to the character dictionary
 		'''
 
+		#Constructing a new tuple in case one of the entries changed
+		newtup = self.build_tuple()
+
+		#Here I'm actually pushing the new tuple into the character_dict. Since the option menu has to be used in order for the button to activate, there's no chance for self.selection to be undefined so it's safe to use.
+		parent.player_handler.set_entry(self.selection,newtup[0],newtup)
+
+		#The only thing left to do is kill the window.
+		self.destroy()
+
 		'''
 		TODO:
-			- Finish the 'EditChar' class by making this command actually puch changes to player_handler
+			- DONE: Finish the 'EditChar' class by making this command actually push changes to player_handler
 			- Add confirmation pop-up before push is completed
+				- This methid WILL overwrite character 'a' if a character 'b's name is changed to 'a'
+				- Throw a warning window when editing names that currently exist!
+
+		FUTURE:
 			- Add 'change buffer' so ctrl+z can undo an edit
 			- Add 'change confirmation' redundancy to disable the button if no changes are detected.
 		'''
-		return
 
 	def set_entries(self,parent):
 		'''
@@ -157,11 +295,11 @@ class EditChar(tk.Toplevel):
 		'''
 
 		#Getting the current Selection
-		selection = str(self.char_var.get())
+		self.selection = str(self.char_var.get())
 
 		#Setting all of the entry widgets
-		if selection != 'Select Character':
-			char_tup = parent.player_handler.get_entry(selection)
+		if self.selection != 'Select Character':
+			char_tup = parent.player_handler.get_entry(self.selection)
 
 			#If the key submitted isn't the 'dummy key', then the entries will be enabled and will display the stats of the character selected.
 			cont_1 = tk.StringVar()
@@ -176,6 +314,7 @@ class EditChar(tk.Toplevel):
 			self.entry_name.config(textvariable=cont_1,state='normal')
 			self.entry_type.config(textvariable=cont_2,state='normal')
 			self.entry_focus.config(textvariable=cont_3,state='normal')
+			self.button.config(state='normal')
 
 		else:
 
@@ -190,6 +329,8 @@ class EditChar(tk.Toplevel):
 			self.entry_name.config(state='disabled')
 			self.entry_type.config(state='disabled')
 			self.entry_focus.config(state='disabled')
+
+			self.button.config(state='disabled')
 
 
 
@@ -269,8 +410,21 @@ class AddChar(tk.Toplevel):
 		Completes the purpose of the window
 		'''
 
+		#Instantiates the new player tuple constructor
+		char_tup = self.build_tuple()
+
+		#Checks to make sure the new player doesn't already exist; returns the new 'name' element
+		new_key = parent.player_handler.check_dict(char_tup[0])
+
+		#Since tuples are immutable, we construct a new tuple. This is done regardless of whether the tuple was actually changed
+		'''
+		EFFICIENCY:
+			- Would it be best to use an if function here?
+		'''
+		new_tup = (new_key,char_tup[1],char_tup[2])
+
 		#Add the tuple to the character dictionary
-		parent.player_handler.add_player(self.build_tuple())
+		parent.player_handler.add_player(new_tup)
 
 		#Kills the window
 		self.destroy()
