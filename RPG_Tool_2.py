@@ -56,7 +56,7 @@ class Edit_warn(tk.Toplevel):
 		top.rowconfigure(0, weight=1)
 
 		#Setting 'top' characteristics
-		self.title('Add Character')
+		self.title('Overwrite Warning!')
 		self.geometry('300x250+600+200')
 		self.tk.call('wm','iconphoto',self._w,photo)
 
@@ -79,9 +79,9 @@ class Edit_warn(tk.Toplevel):
 		self.warn_msg = tk.Message(text='The following action will overwrite '+str(key)+'!'+'\nAre you sure you want to continue?',justify=tk.CENTER)
 
 		#Building option buttons
-		self.overwrite = tk.Button(text='Overwrite', command=None)
-		self.duplicate = tk.Button(text='Duplicate', command=None)
-		self.cancel = tk.Button(text='Cancel', command=None)
+		self.overwrite = tk.Button(text='Overwrite', command=self.set_over)
+		self.duplicate = tk.Button(text='Duplicate', command=self.set_dup)
+		self.cancel = tk.Button(text='Cancel', command=self.set_cancel)
 
 		#Adding everything to grid manager
 		self.warn_msg.grid(row=0,column=0,rowspan=2,columnspan=3,padx=5,pady=5)
@@ -95,6 +95,66 @@ class Edit_warn(tk.Toplevel):
 			- NOTE: The player_handler class check_dict cannot be edited since it's used in AddChar
 			- TEST!! (This class is untested!)
 		'''
+
+		'''
+		TODO:
+			- The methods below need actual code in them that can pass into a method in EditChar
+		'''
+
+	def set_over(self):
+		'''
+		Sets the 'overwrite' option
+		'''
+
+	def set_dup(self):
+		'''
+		Sets the 'duplicate' option
+		'''
+
+	def set_cancel(self):
+		'''
+		Sets the 'cancel' option
+		'''
+
+class Rem_warn(tk.Toplevel):
+	'''
+	Brings up a warning window whenever a user tries to delete a character asking for a confirmation.
+	'''
+
+	def __init__(self,parent):
+		'''
+		Constructor for the class
+		'''
+
+		#Inherets from tk.Toplevel
+		tk.Toplevel.__init__(self,parent)
+
+		#defining the 'top'
+		top = self.winfo_toplevel()
+		top.columnconfigure(0, weight=1)
+		top.rowconfigure(0, weight=1)
+
+		#Setting 'top' characteristics
+		self.title('Overwrite Warning!')
+		self.geometry('300x250+600+200')
+		self.tk.call('wm','iconphoto',self._w,photo)
+
+		self.transient()
+		self.lift(aboveThis=parent)
+		self.focus()
+
+		#Grabbing the focus(??). Supposed to make it so the dialogue box MUST be answered before continuing.
+		self.grab_set()
+
+		#Building the new Frame object
+		self.top_frame = tk.Frame(self)
+
+		#Defining frame characteristics
+		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
+		self.top_frame.rowconfigure(5,weight=1)
+		self.top_frame.columnconfigure(5,weight=1)
+
+
 
 class player_handler():
 	'''
@@ -182,9 +242,18 @@ class player_handler():
 
 		'''
 		TODO:
-			- Add the check_dict method to AddChar class
-			- Since this returns a key, return handling shouldn't need editing
+			- DONE: Add the check_dict method to AddChar class
+			- DONE: Since this returns a key, return handling shouldn't need editing
 		'''
+
+	def rem_entry(self,key):
+		'''
+		Removes an entry, whose key is passed as 'key' from character_dict.
+		'''	
+
+		#Deletes the entry passed as 'key'
+		del self.character_dict[str(key)]
+
 
 class EditChar(tk.Toplevel):
 	'''
@@ -277,6 +346,11 @@ class EditChar(tk.Toplevel):
 
 		#Constructing a new tuple in case one of the entries changed
 		newtup = self.build_tuple()
+
+		#Checking to see if newtup will overwrite another entry
+		if str(newtup[0]) != parent.player_handler.check_dict(str(newtup[0])):
+
+			self.E_warn = Edit_warn(parent,newtup[0])
 
 		#Here I'm actually pushing the new tuple into the character_dict. Since the option menu has to be used in order for the button to activate, there's no chance for self.selection to be undefined so it's safe to use.
 		parent.player_handler.set_entry(self.selection,newtup[0],newtup)
