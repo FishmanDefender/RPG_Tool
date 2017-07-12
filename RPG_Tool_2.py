@@ -191,9 +191,9 @@ class Edit_warn(tk.Toplevel):
 		self.warn_msg = tk.Message(self.top_frame,text='The following action will overwrite '+str(key)+'!'+'\nAre you sure you want to continue?',justify=tk.CENTER)
 
 		#Building option buttons
-		self.overwrite = tk.Button(self.top_frame,text='Overwrite', command= lambda: self.set_res(parent,'over'))
-		self.duplicate = tk.Button(self.top_frame,text='Duplicate', command= lambda: self.set_res(parent,'dupe'))
-		self.cancel = tk.Button(self.top_frame,text='Cancel', command= lambda: self.set_res(parent,'can'))
+		self.overwrite = tk.Button(self.top_frame,text='Overwrite', command= None)
+		self.duplicate = tk.Button(self.top_frame,text='Duplicate', command= None)
+		self.cancel = tk.Button(self.top_frame,text='Cancel', command= None)
 
 		#Adding everything to grid manager
 		self.warn_msg.grid(row=0,column=0,rowspan=2,columnspan=3,padx=5,pady=5)
@@ -212,16 +212,6 @@ class Edit_warn(tk.Toplevel):
 		TODO:
 			- The methods below need actual code in them that can pass into a method in EditChar
 		'''
-
-	def set_res(self,parent,response):
-		'''
-		Sets the response veariable for Edit_warn
-		'''
-		#Pushing res_var back to parent
-		parent.res_var = str(response)
-
-		#Destroy Window
-		self.destroy()
 
 
 
@@ -261,7 +251,7 @@ class Rem_warn(tk.Toplevel):
 		#Defining frame characteristics
 		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
 		self.top_frame.rowconfigure(5,weight=1)
-		self.top_frame.columnconfigure(5,weight=1)
+		self.top_frame.columnconfigure(5,weight=1)#TODO
 
 
 class EditChar(tk.Toplevel):
@@ -348,42 +338,6 @@ class EditChar(tk.Toplevel):
 		return chartuple
 
 
-	def push_changes(self,parent):
-		'''
-		Pushes all edits to the character dictionary
-		'''
-
-		#Instantiate default res_var value
-		self.res_var = 'over'
-
-		#Constructing a new tuple in case one of the entries changed
-		newtup = self.build_tuple()
-
-		#Checking to see if newtup will overwrite any current entries
-		if parent.player_handler.check_dict(newtup[0]):
-			Edit_warn(self,newtup[0])
-
-		#Here I'm actually pushing the new tuple into the character_dict. Since the option menu has to be used in order for the button to activate, there's no chance for self.selection to be undefined so it's safe to use.
-		if self.res_var == 'over':
-			parent.player_handler.set_entry(self.selection,newtup[0],newtup)
-		elif self.res_var == 'dupe':
-			parent.player_handler.set_entry(self.selection,parent.player_handler.check_dict_add(newtup[0]),newtup)
-
-		#The only thing left to do is kill the window.
-		self.destroy()
-
-		'''
-		TODO:
-			- DONE: Finish the 'EditChar' class by making this command actually push changes to player_handler
-			- Add confirmation pop-up before push is completed
-				- This methid WILL overwrite character 'a' if a character 'b's name is changed to 'a'
-				- Throw a warning window when editing names that currently exist!
-
-		FUTURE:
-			- Add 'change buffer' so ctrl+z can undo an edit
-			- Add 'change confirmation' redundancy to disable the button if no changes are detected.
-		'''
-
 	def set_entries(self,parent):
 		'''
 		This updates all of the entry widgets each time the option menu is accessed/changed.
@@ -427,6 +381,24 @@ class EditChar(tk.Toplevel):
 
 			self.button.config(state='disabled')
 
+
+	def push_changes(self,parent):
+		'''
+		Pushes all edits to the character dictionary
+		'''
+
+		
+		'''
+		TODO:
+			- DONE: Finish the 'EditChar' class by making this command actually push changes to player_handler
+			- Add confirmation pop-up before push is completed
+				- This methid WILL overwrite character 'a' if a character 'b's name is changed to 'a'
+				- Throw a warning window when editing names that currently exist!
+
+		FUTURE:
+			- Add 'change buffer' so ctrl+z can undo an edit
+			- Add 'change confirmation' redundancy to disable the button if no changes are detected.
+		'''
 
 
 class AddChar(tk.Toplevel):
