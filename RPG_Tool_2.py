@@ -154,7 +154,7 @@ class Edit_warn(tk.Toplevel):
 	Creates a transient, top-level window that interupts the edit-push process of EditChar. It gives the user options to overwrite, iterate, or cancel the edit action.
 	'''
 
-	def __init__(self,parent,key):
+	def __init__(self,parent,sibling,key):
 		'''
 		Constructs the new top-level componenet
 		'''
@@ -169,7 +169,8 @@ class Edit_warn(tk.Toplevel):
 
 		#Setting 'top' characteristics
 		self.title('Overwrite Warning!')
-		self.geometry('300x250+600+200')
+		self.geometry('400x150+600+200')
+		self.minsize(width=400, height=150)
 		self.tk.call('wm','iconphoto',self._w,photo)
 
 		self.transient()
@@ -184,34 +185,54 @@ class Edit_warn(tk.Toplevel):
 
 		#Defining frame characteristics
 		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
-		self.top_frame.rowconfigure(5,weight=1)
-		self.top_frame.columnconfigure(5,weight=1)
+		self.top_frame.rowconfigure(0,weight=3)
+		self.top_frame.columnconfigure(0,weight=1)
+		self.top_frame.rowconfigure(1,weight=1)
+		self.top_frame.columnconfigure(1,weight=1)
+		self.top_frame.columnconfigure(2,weight=1)
 
 		#Building the 'warning message' widget
-		self.warn_msg = tk.Message(self.top_frame,text='The following action will overwrite '+str(key)+'!'+'\nAre you sure you want to continue?',justify=tk.CENTER)
+		self.warn_msg = tk.Message(self.top_frame,text='The following action will overwrite '+str(key)+'!'+'\nAre you sure you want to continue?',justify=tk.CENTER,anchor=tk.N,aspect=1000)
 
 		#Building option buttons
-		self.overwrite = tk.Button(self.top_frame,text='Overwrite', command= None)
-		self.duplicate = tk.Button(self.top_frame,text='Duplicate', command= None)
-		self.cancel = tk.Button(self.top_frame,text='Cancel', command= None)
+		self.overwrite = tk.Button(self.top_frame,text='Overwrite', command= lambda: self.over_com(sibling,parent))
+		self.duplicate = tk.Button(self.top_frame,text='Duplicate', command= lambda: self.dupe_com(sibling,parent))
+		self.cancel = tk.Button(self.top_frame,text='Cancel', command= self.destroy)
 
 		#Adding everything to grid manager
-		self.warn_msg.grid(row=0,column=0,rowspan=2,columnspan=3,padx=5,pady=5)
+		self.warn_msg.grid(row=0,column=0,rowspan=2,columnspan=3,padx=5,pady=10,sticky=tk.N+tk.S+tk.E+tk.W)
 		self.overwrite.grid(row=1,column=0,padx=5,pady=5)
 		self.duplicate.grid(row=1,column=1,padx=5,pady=5)
 		self.cancel.grid(row=1,column=2,padx=5,pady=5)
 
 		'''
 		TODO:
-			- Impliment Edit_warn inside the EditChar class.
+			- DONE: Impliment Edit_warn inside the EditChar class.
 			- NOTE: The player_handler class check_dict_add cannot be edited since it's used in AddChar
-			- TEST!! (This class is untested!)
+			- DONE: TEST!! (This class is untested!)
 		'''
 
+	def over_com(self,sibling,parent):
 		'''
-		TODO:
-			- The methods below need actual code in them that can pass into a method in EditChar
+		Issues overwrite command in EditChar then destroys itself.
 		'''
+
+		#Issuing overwrite command
+		sibling.push_changes(parent)
+
+		#Terminate!
+		self.destroy()
+
+	def dupe_com(self,sibling,parent):
+		'''
+		Issues duplicate command in EditChar then destroys itself.
+		'''
+
+		#Issuing dupe command
+		sibling.push_dupe(parent)
+
+		#Terminate!
+		self.destroy()
 
 
 
@@ -309,7 +330,7 @@ class EditChar(tk.Toplevel):
 		self.entry_focus = tk.Entry(self.top_frame,state='disabled')
 
 		#Adding the button at the bottom
-		self.button = tk.Button(self.top_frame,text='Save Changes',state='disabled',command= lambda : self.push_changes(parent))	
+		self.button = tk.Button(self.top_frame,text='Save Changes',state='disabled',command= lambda : self.check_warn(parent))	
 
 		#Aligning all widgets to the grid
 		self.options.grid(row=0,column=0,columnspan=2,padx=5,pady=5)
@@ -381,20 +402,60 @@ class EditChar(tk.Toplevel):
 
 			self.button.config(state='disabled')
 
+	def check_warn(self,parent):
+		'''
+		Checks to see if the edit will overwrite a current character.
+		'''
+
+		#If a key-conflict is detected, it launches Edit_warn. If not, then it pushes the changes.
+		if parent.player_handler.check_dict(str(self.entry_name.get())):
+			self.new_warn = Edit_warn(parent,self,str(self.entry_name.get()))
+		else:
+			self.push_changes(parent)
+
 
 	def push_changes(self,parent):
 		'''
 		Pushes all edits to the character dictionary
 		'''
 
+		#Construct the new tuple
+		newtup = self.build_tuple()
+
+		#Here I'm actually pushing the changes. Since self.selection must be declared before the 'Edit Character' button activates, it's safe to use here.
+		parent.player_handler.set_entry(self.selection,newtup[0],newtup)
+
+		#All that's left is to kill the window
+		self.destroy()
+
+	def push_dupe(self,parent):
+		'''
+		Pushes the changes, but duplicates the character instead of overwriting them.
+		'''
+
+		#Construct the newtup, just like in 'push_changes'
+		newtup = self.build_tuple()
+
+		#Creating the 'new name'
+		new_name = parent.player_handler.check_dict_add(newtup[0])
+
+		#Creating newtup_2 with the iterated name
+		newtup_2 = (new_name,newtup[1],newtup[2])
+
+		#Unlike 'push_changes' we don't pass newtup[0] as the newkey. Istead we pass check_dict_add(newtup[0]) as the newkey.
+		parent.player_handler.set_entry(self.selection,new_name,newtup_2)
+
+		#Now that the player has been added, we can safely destory the window
+		self.destroy()
 		
 		'''
 		TODO:
-			- DONE: Finish the 'EditChar' class by making this command actually push changes to player_handler
-			- Add confirmation pop-up before push is completed
-				- This methid WILL overwrite character 'a' if a character 'b's name is changed to 'a'
-				- Throw a warning window when editing names that currently exist!
-
+			DONE: 
+				- Finish the 'EditChar' class by making this command actually push changes to player_handler
+			Done: 
+				- Add confirmation pop-up before push is completed
+					- This methid WILL overwrite character 'a' if a character 'b's name is changed to 'a'
+					- Throw a warning window when editing names that currently exists
 		FUTURE:
 			- Add 'change buffer' so ctrl+z can undo an edit
 			- Add 'change confirmation' redundancy to disable the button if no changes are detected.
@@ -495,6 +556,52 @@ class AddChar(tk.Toplevel):
 
 		#Kills the window
 		self.destroy()
+
+
+class RemChar():
+	'''
+	Creates a new window with a drop-down menu that will remove a selected character from character_dict
+	'''
+
+	def __init__(self,parent):
+
+		#Inherets from tk.Toplevel
+		tk.Toplevel.__init__(self,parent)
+
+		#defining the 'top'
+		top = self.winfo_toplevel()
+		top.columnconfigure(0, weight=1)
+		top.rowconfigure(0, weight=1)
+
+		#Setting 'top' characteristics
+		self.title('Remove Character')
+		self.geometry('250x200+600+200')
+		self.tk.call('wm','iconphoto',self._w,photo)
+
+		self.transient()
+		self.lift(aboveThis=parent)
+		self.focus()
+
+		#Building the new Frame object
+		self.top_frame = tk.Frame(self)
+
+		#Defining frame characteristics
+		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
+		self.top_frame.rowconfigure(4,weight=1)
+		self.top_frame.columnconfigure(4,weight=1)
+
+		#Setting things up for the Option Menu
+		chars = parent.player_handler.get_keys()
+		chars.insert(0, 'Select Character')
+		self.char_var = tk.StringVar()
+		self.char_var.set(chars[0])
+
+		#Adding the Option Menu
+		self.options = tk.OptionMenu(self.top_frame, self.char_var, *chars, command = lambda _:self.set_entries(parent))
+		self.options.config(bg = '#fff')
+
+
+
 
 
 class Canvas(tk.Canvas):
@@ -672,8 +779,10 @@ Mechanical Stuff
 		Is all player stats necessary?
 		Could we generalize the whole application to use just the following
 			Name, Age, Level, Alignment?
-	DONE: Add Player Manager to add players from the character_dict
-	Player_handler needs to be able to remove players from the character_dict
+	DONE: 
+		Add Player Manager to add players from the character_dict
+	DONE: 
+		Player_handler needs to be able to remove players from the character_dict
 	Add Canvas writing handler for all new characters
 	Add Save/Load support
 
@@ -681,4 +790,7 @@ Beautification Stuff:
 	Add Minimum Size to each frame
 
 	...probably a bunch of other stuff, too.
+
+Known Bugs:
+	- If you submit 2 characters with the same, one will be 'name' and the other will be 'name (0)'. If you then edit 'name (0)' to be 'name' then select 'duplicate', you will get 'name (1)' and 'name (0)' is deleted.
 '''
