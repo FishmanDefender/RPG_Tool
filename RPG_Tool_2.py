@@ -37,7 +37,7 @@ menu_font = Font(family = 'Segoe UI', size = 9)
 This sets the fonts used in the application as global variables.
 '''
 
-class player_handler():
+class player_manager():
 	'''
 	Handles all player additions, subtractions, edits, and deletions.
 	'''
@@ -192,7 +192,7 @@ class Edit_warn(tk.Toplevel):
 		self.top_frame.columnconfigure(2,weight=1)
 
 		#Building the 'warning message' widget
-		self.warn_msg = tk.Message(self.top_frame,text='The following action will overwrite '+str(key)+'!'+'\nAre you sure you want to continue?',justify=tk.CENTER,anchor=tk.N,aspect=1000)
+		self.warn_msg = tk.Message(self.top_frame,text='The following action will overwrite '+str(key)+'!'+'\nHow would you like to continue?',justify=tk.CENTER,anchor=tk.N,aspect=1000)
 
 		#Building option buttons
 		self.overwrite = tk.Button(self.top_frame,text='Overwrite', command= lambda: self.over_com(sibling,parent))
@@ -208,7 +208,7 @@ class Edit_warn(tk.Toplevel):
 		'''
 		TODO:
 			- DONE: Impliment Edit_warn inside the EditChar class.
-			- NOTE: The player_handler class check_dict_add cannot be edited since it's used in AddChar
+			- NOTE: The player_manager class check_dict_add cannot be edited since it's used in AddChar
 			- DONE: TEST!! (This class is untested!)
 		'''
 
@@ -241,7 +241,7 @@ class Rem_warn(tk.Toplevel):
 	Brings up a warning window whenever a user tries to delete a character asking for a confirmation.
 	'''
 
-	def __init__(self,parent):
+	def __init__(self,parent,sibling,key):
 		'''
 		Constructor for the class
 		'''
@@ -255,8 +255,9 @@ class Rem_warn(tk.Toplevel):
 		top.rowconfigure(0, weight=1)
 
 		#Setting 'top' characteristics
-		self.title('Overwrite Warning!')
-		self.geometry('300x250+600+200')
+		self.title('Confirm Delete')
+		self.geometry('350x150+625+300')
+		self.minsize(width=350, height=150)
 		self.tk.call('wm','iconphoto',self._w,photo)
 
 		self.transient()
@@ -271,8 +272,32 @@ class Rem_warn(tk.Toplevel):
 
 		#Defining frame characteristics
 		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
-		self.top_frame.rowconfigure(5,weight=1)
-		self.top_frame.columnconfigure(5,weight=1)#TODO
+		self.top_frame.rowconfigure(0,weight=3)
+		self.top_frame.columnconfigure(0,weight=1)
+		self.top_frame.rowconfigure(1,weight=1)
+		self.top_frame.columnconfigure(1,weight=1)
+
+		#Adding the Warning message
+		self.warn_msg = tk.Message(self.top_frame,text='Are you sure you want to delete\n'+str(key)+'?',justify=tk.CENTER,anchor=tk.N,aspect=1000)
+
+		#Building option buttons
+		self.del_but = tk.Button(self.top_frame,text='Confirm', command= lambda: self.del_con(parent,sibling,key))
+		self.cancel_but = tk.Button(self.top_frame,text='Cancel', command= self.destroy)
+
+		#Adding everything to grid manager
+		self.warn_msg.grid(row=0,column=0,rowspan=2,columnspan=2,padx=5,pady=10,sticky=tk.N+tk.S+tk.E+tk.W)
+		self.del_but.grid(row=1,column=0,padx=5,pady=5)
+		self.cancel_but.grid(row=1,column=1,padx=5,pady=5)
+
+	def del_con(self,parent,sibling,key):
+		'''
+		Issues the delete player method via player_manager
+		'''
+		#Calls the delete_complete method in RemChar, which calls rem_entry() to remove a palyer from character_dict
+		sibling.delete_complete(parent)
+
+		#Kill the window
+		self.destroy()
 
 
 class EditChar(tk.Toplevel):
@@ -296,6 +321,7 @@ class EditChar(tk.Toplevel):
 		#Setting 'top' characteristics
 		self.title('Edit Character')
 		self.geometry('300x250+600+200')
+		self.minsize(width=300, height=250)
 		self.tk.call('wm','iconphoto',self._w,photo)
 
 		self.transient()
@@ -307,11 +333,16 @@ class EditChar(tk.Toplevel):
 
 		#Defining frame characteristics
 		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
-		self.top_frame.rowconfigure(5,weight=1)
-		self.top_frame.columnconfigure(5,weight=1)
+		self.top_frame.rowconfigure(0,weight=1)
+		self.top_frame.rowconfigure(1,weight=1)
+		self.top_frame.rowconfigure(2,weight=1)
+		self.top_frame.rowconfigure(3,weight=1)
+		self.top_frame.rowconfigure(4,weight=1)
+		self.top_frame.columnconfigure(0,weight=1)
+		self.top_frame.columnconfigure(1,weight=1)
 
 		#Setting things up for the Option Menu
-		chars = parent.player_handler.get_keys()
+		chars = parent.player_manager.get_keys()
 		chars.insert(0, 'Select Character')
 		self.char_var = tk.StringVar()
 		self.char_var.set(chars[0])
@@ -369,7 +400,7 @@ class EditChar(tk.Toplevel):
 
 		#Setting all of the entry widgets
 		if self.selection != 'Select Character':
-			char_tup = parent.player_handler.get_entry(self.selection)
+			char_tup = parent.player_manager.get_entry(self.selection)
 
 			#If the key submitted isn't the 'dummy key', then the entries will be enabled and will display the stats of the character selected.
 			cont_1 = tk.StringVar()
@@ -408,7 +439,7 @@ class EditChar(tk.Toplevel):
 		'''
 
 		#If a key-conflict is detected, it launches Edit_warn. If not, then it pushes the changes.
-		if parent.player_handler.check_dict(str(self.entry_name.get())):
+		if parent.player_manager.check_dict(str(self.entry_name.get())):
 			self.new_warn = Edit_warn(parent,self,str(self.entry_name.get()))
 		else:
 			self.push_changes(parent)
@@ -423,7 +454,7 @@ class EditChar(tk.Toplevel):
 		newtup = self.build_tuple()
 
 		#Here I'm actually pushing the changes. Since self.selection must be declared before the 'Edit Character' button activates, it's safe to use here.
-		parent.player_handler.set_entry(self.selection,newtup[0],newtup)
+		parent.player_manager.set_entry(self.selection,newtup[0],newtup)
 
 		#All that's left is to kill the window
 		self.destroy()
@@ -437,13 +468,13 @@ class EditChar(tk.Toplevel):
 		newtup = self.build_tuple()
 
 		#Creating the 'new name'
-		new_name = parent.player_handler.check_dict_add(newtup[0])
+		new_name = parent.player_manager.check_dict_add(newtup[0])
 
 		#Creating newtup_2 with the iterated name
 		newtup_2 = (new_name,newtup[1],newtup[2])
 
 		#Unlike 'push_changes' we don't pass newtup[0] as the newkey. Istead we pass check_dict_add(newtup[0]) as the newkey.
-		parent.player_handler.set_entry(self.selection,new_name,newtup_2)
+		parent.player_manager.set_entry(self.selection,new_name,newtup_2)
 
 		#Now that the player has been added, we can safely destory the window
 		self.destroy()
@@ -451,8 +482,8 @@ class EditChar(tk.Toplevel):
 		'''
 		TODO:
 			DONE: 
-				- Finish the 'EditChar' class by making this command actually push changes to player_handler
-			Done: 
+				- Finish the 'EditChar' class by making this command actually push changes to player_manager
+			DONE: 
 				- Add confirmation pop-up before push is completed
 					- This methid WILL overwrite character 'a' if a character 'b's name is changed to 'a'
 					- Throw a warning window when editing names that currently exists
@@ -482,7 +513,8 @@ class AddChar(tk.Toplevel):
 
 		#Setting 'top' characteristics
 		self.title('Add Character')
-		self.geometry('250x200+600+200')
+		self.geometry('310x180+600+200')
+		self.minsize(width=310, height=180)
 		self.tk.call('wm','iconphoto',self._w,photo)
 
 		self.transient()
@@ -494,8 +526,12 @@ class AddChar(tk.Toplevel):
 
 		#Defining frame characteristics
 		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
-		self.top_frame.rowconfigure(4,weight=1)
-		self.top_frame.columnconfigure(4,weight=1)
+		self.top_frame.rowconfigure(0,weight=1)
+		self.top_frame.rowconfigure(1,weight=1)
+		self.top_frame.rowconfigure(2,weight=1)
+		self.top_frame.rowconfigure(3,weight=1)		
+		self.top_frame.columnconfigure(0,weight=1)
+		self.top_frame.columnconfigure(1,weight=1)
 
 		#Adding labels and Entries
 		self.name = tk.Label(self.top_frame,text='Name')
@@ -542,7 +578,7 @@ class AddChar(tk.Toplevel):
 		char_tup = self.build_tuple()
 
 		#Checks to make sure the new player doesn't already exist; returns the new 'name' element
-		new_key = parent.player_handler.check_dict_add(char_tup[0])
+		new_key = parent.player_manager.check_dict_add(char_tup[0])
 
 		#Since tuples are immutable, we construct a new tuple. This is done regardless of whether the tuple was actually changed
 		'''
@@ -552,13 +588,13 @@ class AddChar(tk.Toplevel):
 		new_tup = (new_key,char_tup[1],char_tup[2])
 
 		#Add the tuple to the character dictionary
-		parent.player_handler.add_player(new_tup)
+		parent.player_manager.add_player(new_tup)
 
 		#Kills the window
 		self.destroy()
 
 
-class RemChar():
+class RemChar(tk.Toplevel):
 	'''
 	Creates a new window with a drop-down menu that will remove a selected character from character_dict
 	'''
@@ -575,7 +611,8 @@ class RemChar():
 
 		#Setting 'top' characteristics
 		self.title('Remove Character')
-		self.geometry('250x200+600+200')
+		self.geometry('350x100+600+200')
+		self.minsize(width=350, height=100)
 		self.tk.call('wm','iconphoto',self._w,photo)
 
 		self.transient()
@@ -587,21 +624,59 @@ class RemChar():
 
 		#Defining frame characteristics
 		self.top_frame.grid(sticky=tk.N+tk.E+tk.S+tk.W)
-		self.top_frame.rowconfigure(4,weight=1)
-		self.top_frame.columnconfigure(4,weight=1)
+		self.top_frame.rowconfigure(0,weight=1)
+		self.top_frame.rowconfigure(1,weight=1)
+		self.top_frame.columnconfigure(0,weight=1)
 
 		#Setting things up for the Option Menu
-		chars = parent.player_handler.get_keys()
+		chars = parent.player_manager.get_keys()
 		chars.insert(0, 'Select Character')
 		self.char_var = tk.StringVar()
 		self.char_var.set(chars[0])
 
 		#Adding the Option Menu
-		self.options = tk.OptionMenu(self.top_frame, self.char_var, *chars, command = lambda _:self.set_entries(parent))
+		self.options = tk.OptionMenu(self.top_frame, self.char_var, *chars, command = lambda _:self.get_sel())
 		self.options.config(bg = '#fff')
 
+		#Adding the delete button
+		self.del_but = tk.Button(self.top_frame,text='Delete',command= lambda : self.confirm(parent),state='disabled')
+
+		#Adding all elements to the grid manager
+		self.options.grid(row=0,column=0,padx=5,pady=5)
+		self.del_but.grid(row=1,column=0,padx=5,pady=5)
 
 
+	def get_sel(self):
+		'''
+		This method sets the selection varible.
+		'''
+
+		#Getting the current Selection
+		self.selection = str(self.char_var.get())
+
+		#Setting the delete button as 'active' when appropriate
+		if self.selection == 'Select Character':
+			self.del_but.config(state='disabled')
+		else:
+			self.del_but.config(state='normal')
+
+	def confirm(self,parent):
+		'''
+		Throws the Rem_warn window.
+		'''
+
+		self.rem_warn = Rem_warn(parent,self,str(self.selection))
+
+	def delete_complete(self,parent):
+		'''
+		This actually does the delete and kills this window
+		'''
+
+		#Calls the actual removal method in the player_manager
+		parent.player_manager.rem_entry(str(self.selection))
+
+		#Kills the window
+		self.destroy()
 
 
 class Canvas(tk.Canvas):
@@ -660,7 +735,7 @@ class MainMenu(tk.Menu):
 		parent.campaign.add_command(label='Edit Character...', command= lambda : EditChar(parent))#The command is a lambda so I can pass the 'Application' class as the parent.
 		parent.campaign.add_command(label='Add Character...', command= lambda : AddChar(parent)) #The command here is a Lambda function so the AddChar isn't called at the startup of the script.
 		#Could also use 'command = AddChar' without parenths.
-		parent.campaign.add_command(label='Remove Character', command=None)
+		parent.campaign.add_command(label='Remove Character', command= lambda: RemChar(parent))#DONE
 		parent.campaign.add_separator()
 		parent.campaign.add_command(label='Export Character...', command=None)
 		parent.campaign.add_command(label='Import Character...', command=None)
@@ -756,7 +831,7 @@ class Application(tk.Frame):
 		self.menu = MainMenu(self)
 		self.info = InfoColumn(self,1,0)
 
-		self.player_handler = player_handler(self)
+		self.player_manager = player_manager(self)
 
 def main():
     
@@ -782,12 +857,13 @@ Mechanical Stuff
 	DONE: 
 		Add Player Manager to add players from the character_dict
 	DONE: 
-		Player_handler needs to be able to remove players from the character_dict
+		player_manager needs to be able to remove players from the character_dict
 	Add Canvas writing handler for all new characters
 	Add Save/Load support
 
 Beautification Stuff:
-	Add Minimum Size to each frame
+	DONE:
+		Add Minimum Size to each frame
 
 	...probably a bunch of other stuff, too.
 
