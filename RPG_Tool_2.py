@@ -204,13 +204,7 @@ class Edit_warn(tk.Toplevel):
 		self.overwrite.grid(row=1,column=0,padx=5,pady=5)
 		self.duplicate.grid(row=1,column=1,padx=5,pady=5)
 		self.cancel.grid(row=1,column=2,padx=5,pady=5)
-
-		'''
-		TODO:
-			- DONE: Impliment Edit_warn inside the EditChar class.
-			- NOTE: The player_manager class check_dict_add cannot be edited since it's used in AddChar
-			- DONE: TEST!! (This class is untested!)
-		'''
+		
 
 	def over_com(self,sibling,parent):
 		'''
@@ -480,13 +474,6 @@ class EditChar(tk.Toplevel):
 		self.destroy()
 		
 		'''
-		TODO:
-			DONE: 
-				- Finish the 'EditChar' class by making this command actually push changes to player_manager
-			DONE: 
-				- Add confirmation pop-up before push is completed
-					- This methid WILL overwrite character 'a' if a character 'b's name is changed to 'a'
-					- Throw a warning window when editing names that currently exists
 		FUTURE:
 			- Add 'change buffer' so ctrl+z can undo an edit
 			- Add 'change confirmation' redundancy to disable the button if no changes are detected.
@@ -848,22 +835,10 @@ if __name__ == '__main__':
     '''
 TODO:
 Mechanical Stuff
-	DONE: Toplevel menu needs commnds
-	DONE: Add InfoColumn on the left side of the Canvas
-		How to display PC vs NPC character info?
-		Is all player stats necessary?
-		Could we generalize the whole application to use just the following
-			Name, Age, Level, Alignment?
-	DONE: 
-		Add Player Manager to add players from the character_dict
-	DONE: 
-		player_manager needs to be able to remove players from the character_dict
 	Add Canvas writing handler for all new characters
 	Add Save/Load support
 
 Beautification Stuff:
-	DONE:
-		Add Minimum Size to each frame
 
 	...probably a bunch of other stuff, too.
 
