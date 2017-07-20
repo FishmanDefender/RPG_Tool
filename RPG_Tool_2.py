@@ -859,7 +859,7 @@ class Canvas(tk.Canvas):
 		'''
 
 		#Gets a method variable with the size of the smaller of the two dimensions
-		small_dim = min(self.can.winfo_height(),self.can.winfo_width())
+		small_dim = min(self.can.winfo_reqheight(),self.can.winfo_reqwidth())
 
 		#Reducing the size of the large radius
 		bigrad = int(small_dim) - 30
