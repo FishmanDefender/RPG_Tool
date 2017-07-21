@@ -6,6 +6,7 @@ Created on June 28, 2017
 #!/usr/bin/env python
 import tkinter as tk
 import os
+import math
 from tkinter.font import Font
 
 '''
@@ -52,6 +53,13 @@ class player_manager():
 
 		#Iteration dictionary for name equivelence
 		self.it_dict = {}
+
+	def get_dict(self):
+		'''
+		returns the character_dict object
+		'''
+
+		return self.character_dict
 
 	def add_player(self,tuple):
 		'''
@@ -676,11 +684,128 @@ class Canvas(tk.Canvas):
 		Constructor initiates the canvas. The parent must be a frame or a method that inherits from the frame class
 		'''
 
+		#Setting local parent
+		self.parent = parent
+
 		#Setting the canvas properties
-		self.can = tk.Canvas(parent, bg = '#fff', bd=2, relief='groove')
+		self.can = tk.Canvas(self.parent, bg = '#fff', bd=2, relief='groove')
 		self.can.grid(row=r0, column=c0, rowspan=5, columnspan=5, sticky=tk.N+tk.S+tk.E+tk.W, pady=5, padx=5)
 		self.can.columnconfigure(1,weight=1)
 		self.can.rowconfigure(1, weight=1)
+
+		#Creating some class variables
+		self.s_rad = 30 #Right now this is hard-coded, but might be editable in the FUTURE...
+
+		#Binding an event handler. Whenever the widget is configured it will call this.
+		self.can.bind('<Configure>',self.config_call)
+
+		#In the case of a 'load', this will redraw all of the characters in character_dict
+		self.init_draw()
+
+
+	def set_dict(self):
+		'''
+		Method sets the local copy of character_dict
+		'''
+
+		#Setting the class-copy of character_dict
+		self.char_dict = self.parent.player_manager.get_dict()
+
+
+	def build_coords(self):
+		'''
+		Constructs a list of tuples of the form (x,y) which will act as the centers of the player icons.
+		'''
+
+		#Sets class-copy of character_dict in case anything has changed
+		self.set_dict()
+
+		#Getting its length
+		num_char = len(self.char_dict)
+
+		#Creating the player location list
+		self.angle_int = float(math.tau()/(num_char - 1)) #Number of radians between each char drawn
+		self.coord_list = [(0,0)]
+		n = 0
+
+		for x in (num_char-1):
+			x_dif = float(self.b_rad*math.sin(self.angle_int*n))
+			y_dif = float(self.b_rad*math.cos(self.angle_int*n))
+			self.coord_list.append((int(math.ceil(self.xmid - x_dif)), int(math.ceil(self.ymid - y_dif))))
+			n =+ 1
+
+
+	def config_call(self, event):
+		'''
+		The callback method for the configure event. This is constructed primarily to update all dimension variables whenever the widget properties are changed
+		'''
+
+		#Dividing by two then taking the ceiling to get the center (or lower/lower-right) pixel of the canvas widget
+		self.xmid = math.ceil(float(event.width)/2)
+		self.ymid = math.ceil(float(event.height)/2)
+
+		#Since we don't want an error if the window is non-existantly small, we make sure that we don't subtract off more than the minimum half-distance
+		if min(self.xmid,self.ymid) >= 2*self.s_rad:
+			self.b_rad = int(min(self.xmid,self.ymid) - 2*self.s_rad)
+		else:
+			self.b_rad = int(self.s_rad)
+
+		self.build_coords()
+
+
+	def get_abrev_dict(self):
+		'''
+		This gets a list of abreviations for the names and pairs them with their respective keys.
+		'''
+
+		#Getting Names
+		char_keys = self.parent.player_manager.get_keys()
+
+		abrev_dict = {}
+
+		for name in char_keys:
+
+			nullcount = 0
+			name_list = name.split()
+
+			if len(name_list) == 0:
+				abrev = 'N'+str(nullcount)
+				nullcount =+1
+			elif len(name_list) == 1:
+				first_n = str(name_list[0]).upper()
+				abrev = first_n[0]
+			else:
+				first_n = str(name_list[0])
+				last_n = str(name_list[-1])
+
+				first_l = first_n.upper()
+				last_l = last_n.upper()
+
+				abrev = first_l + last_l
+
+			abrev_dict[str(name)] = abrev
+
+		return abrev_dict
+
+
+	def init_draw(self):
+		'''
+		Initial Draw method. This will initialize the canvas with all the players currently loaded into character_dict
+		'''
+
+		#Setting the dictionary and building the draw-choords
+		self.build_coords()
+
+		#Getting the abrev dict
+		self.abrev_dict = self.get_abrev_dict()
+
+		'''
+		TODO:
+			Stopped here. Need to pick up at this point and finish canvas drawing methods.
+		'''
+
+	
+
 
 
 class MainMenu(tk.Menu):
