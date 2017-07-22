@@ -7,6 +7,7 @@ Created on June 28, 2017
 import tkinter as tk
 import os
 import math
+import colorsys
 from tkinter.font import Font
 
 '''
@@ -693,6 +694,9 @@ class Canvas(tk.Canvas):
 		self.can.columnconfigure(1,weight=1)
 		self.can.rowconfigure(1, weight=1)
 
+		#Adding a color manager
+		self.cm = color_manager(self)
+
 		#Creating some class variables
 		self.s_rad = 30 #Right now this is hard-coded, but might be editable in the FUTURE...
 
@@ -717,6 +721,10 @@ class Canvas(tk.Canvas):
 		Constructs a list of tuples of the form (x,y) which will act as the centers of the player icons.
 		'''
 
+		#Getting Dimensions
+		xmid = math.ceil(self.can.winfo_width()/2)
+		ymid = math.ceil(self.can.winfo_height()/2)
+
 		#Sets class-copy of character_dict in case anything has changed
 		self.set_dict()
 
@@ -724,15 +732,22 @@ class Canvas(tk.Canvas):
 		num_char = len(self.char_dict)
 
 		#Creating the player location list
-		self.angle_int = float(math.tau()/(num_char - 1)) #Number of radians between each char drawn
-		self.coord_list = [(0,0)]
+		if num_char > 1:
+			self.angle_int = math.tau/(num_char - 1) #Number of radians between each char drawn
+		else:
+			self.angle_int = math.tau #If there's only 1 char, this is set to 360.
+
+		self.coord_list = [(xmid,ymid)]
 		n = 0
 
-		for x in (num_char-1):
+		for x in list(range(num_char-1)):
 			x_dif = float(self.b_rad*math.sin(self.angle_int*n))
 			y_dif = float(self.b_rad*math.cos(self.angle_int*n))
 			self.coord_list.append((int(math.ceil(self.xmid - x_dif)), int(math.ceil(self.ymid - y_dif))))
 			n =+ 1
+
+		print(self.coord_list)
+		return self.coord_list
 
 
 	def config_call(self, event):
@@ -753,9 +768,39 @@ class Canvas(tk.Canvas):
 		self.build_coords()
 
 
+	def draw_icon(self,key,abrev,coords,norm_colors,active_colors):
+		'''
+		Draws a circle icon around the passed coordinates and fills it with the abreviations and tags it with the key.
+		'''
+
+		#Unpacking Coord tuple
+		x = coords[0]
+		y = coords[1]
+		r2 = self.s_rad
+
+		#Getting Colors from tuples
+		active_fill = active_colors[0]
+		active_out = active_colors[1]
+		norm_fill = norm_colors[0]
+		norm_out = norm_colors[1]
+
+
+		#Drawing the circle
+		circ_id = self.can.create_oval(x-r2, y+r2, x+r2, y-r2, width=4, activefill=active_fill, activeoutline=active_out, fill=norm_fill, outline=norm_out, tags=str(key))
+
+		#Drawing the text
+		text_id = self.can.create_text(x, y, text=str(abrev), tags=key, activefill= active_out, fill=norm_out)
+
+		#Creating the 'recently drawn' variable
+		'''
+		This variable is currently unused! It can be used to support ctrl+z and ctrl+y shortcuts.
+		'''
+		self.recently_added = (circ_id, text_id)
+
+
 	def get_abrev_dict(self):
 		'''
-		This gets a list of abreviations for the names and pairs them with their respective keys.
+		This gets and returns a list of abreviations for the names and pairs them with their respective keys.
 		'''
 
 		#Getting Names
@@ -794,18 +839,109 @@ class Canvas(tk.Canvas):
 		'''
 
 		#Setting the dictionary and building the draw-choords
-		self.build_coords()
+		self.coord_list = self.build_coords()
 
 		#Getting the abrev dict
 		self.abrev_dict = self.get_abrev_dict()
 
+		#Getting the keys
+		char_keys = self.parent.player_manager.get_keys()
+
+		#Getting a list of colors based on angle
+		n = 0
+		norm_hex_list = []
+		active_hex_list = []
+		
+		for x in self.char_dict:
+			hue = self.cm.hue_prop(n*self.angle_int,360)
+
+			hsl1 = (hue, 255, 235)
+			hsl2 = (hue, 255, 160)
+			new_hex1 = self.cm.hsl_to_hex(hsl1)
+			new_hex2 = self.cm.hsl_to_hex(hsl2)
+
+			hsl3 = (hue, 255, 220)
+			hsl4 = (hue, 255, 145)
+			new_hex3 = self.cm.hsl_to_hex(hsl3)
+			new_hex4 = self.cm.hsl_to_hex(hsl4)
+
+			norm_hex_tup = (new_hex3,new_hex4)
+			norm_hex_list.append(norm_hex_tup)
+			active_hex_tup = (new_hex1,new_hex2)
+			active_hex_list.append(active_hex_tup)
+
+		i = 0
+
+		for x in self.abrev_dict:
+			self.draw_icon(char_keys[i], self.abrev_dict[char_keys[i]], self.coord_list[i], norm_hex_list[i], active_hex_list[i])
+			i += 1
+
+
+
+
+
+
+
+class color_manager():
+	'''
+	This class contains metods to modify, save, and pull colors in hex, rgb, and hsl
+	'''
+
+	def __init__(self,parent):
 		'''
-		TODO:
-			Stopped here. Need to pick up at this point and finish canvas drawing methods.
+		Constructs a color dictionary where colors can be added and removed.
+		'''
+		self.color_dict = {}
+
+	def add_color(self,key,tup):
+		'''
+		Adds a new entry to the color dictionary.
+		'''
+		self.color_dict[key] = tup
+
+	def hue_prop(self,num1,num2):
+		'''
+		Calculates the hue as a related proportion out of 255
+		'''
+		 
+		hue = int((float(num1)/float(num2))*255)
+		print(hue)
+		return hue
+
+	def hue_mod(self,num1):
+		'''
+		Returns a hue out of 255 that is calculated using a mod 255 function
+		'''
+		hue = int(float(num1) % 255)
+		return hue
+
+	def hsl_to_hex(self,tup):
+		'''
+		This requires a tuple containing floats of the form (hue,sat,lig) to work. Returns a hex value for the color
 		'''
 
-	
+		#Checking to make sure the color is a valid hsl color!
+		for x in tup:
+			if x > 255:
+				raise ValueError('The color tuple passed to hsl_to_hex contains invalid values!')
 
+		rgb = colorsys.hls_to_rgb(tup[0]/255,tup[2]/255,tup[1]/255)
+
+		print(rgb)
+
+		red = '%02x' % int(math.ceil(rgb[0]*255))
+		green = '%02x' % int(math.ceil(rgb[1]*255))
+		blue = '%02x' % int(math.ceil(rgb[2]*255))
+
+		color_hex = '#'+red+green+blue
+		
+		print(color_hex)
+
+		return color_hex
+
+		'''
+		STATUS: WORKING!
+		'''
 
 
 class MainMenu(tk.Menu):
@@ -854,6 +990,7 @@ class MainMenu(tk.Menu):
 
 		#Creating the 'Test' submenu
 		parent.test = tk.Menu(parent.menuBar, tearoff=0, font=menu_font)
+		parent.test.add_command(label='Init Draw', command= lambda : parent.canvas.init_draw())
 		'''
 		Put all toplevel windows here to test them.
 		'''
@@ -938,12 +1075,12 @@ class Application(tk.Frame):
 		self.grid(sticky=tk.N+tk.E+tk.S+tk.W)
 		self.rowconfigure(1, weight=1)
 		self.columnconfigure(1, weight=1)
+
+		self.player_manager = player_manager(self)
         
 		self.canvas = Canvas(self,1,1)
 		self.menu = MainMenu(self)
 		self.info = InfoColumn(self,1,0)
-
-		self.player_manager = player_manager(self)
 
 def main():
     
