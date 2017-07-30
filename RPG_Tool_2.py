@@ -76,7 +76,7 @@ class player_manager():
 		'''
 
 		char_keys = sorted(self.character_dict.keys())
-		print (char_keys)
+		#print('char_keys: ' + str(char_keys))
 		return char_keys
 
 	def get_entry(self,key):
@@ -706,6 +706,9 @@ class Canvas(tk.Canvas):
 		#In the case of a 'load', this will redraw all of the characters in character_dict
 		self.init_draw()
 
+		#Creating an ID dictionary (This will be used for ctrl+z handling)
+		self.id_dict = {}
+
 
 	def set_dict(self):
 		'''
@@ -744,9 +747,9 @@ class Canvas(tk.Canvas):
 			x_dif = float(self.b_rad*math.sin(self.angle_int*n))
 			y_dif = float(self.b_rad*math.cos(self.angle_int*n))
 			self.coord_list.append((int(math.ceil(self.xmid - x_dif)), int(math.ceil(self.ymid - y_dif))))
-			n =+ 1
+			n += 1
 
-		print(self.coord_list)
+		#print(self.coord_list)
 		return self.coord_list
 
 
@@ -791,11 +794,58 @@ class Canvas(tk.Canvas):
 		#Drawing the text
 		text_id = self.can.create_text(x, y, text=str(abrev), tags=key, activefill= active_out, fill=norm_out)
 
+		#Creating an id tuple
+		new_tup = (circ_id, text_id)
+		self.id_dict[str(key)] = new_tup
+
+		'''
+		The following code is breaking the current function. I'm going to abandon the text vs circle activation problem for now since it is minor, but it will have to be fixed in future updates. Likely it would be better to define an object class that inherits from the oval object, but contains 'Enter' and 'Leave' handlers, natively.
+
+
+
+		#Binding the 'Enter' and 'Leave' event handlers
+		circ = self.can.find_withtag(circ_id)
+		text = self.can.find_withtag(text_id)
+
+		circ.bind('<Enter>', lambda event, arg=key: self.enter_active('<Enter>',arg))
+		text.bind('<Enter>', lambda event, arg=key: self.enter_active('<Enter>',arg))
+
+		circ.bind('<Leave>', lambda event, arg=key: self.leave_deactive('<Leave>',arg))
+		circ.bind('<Leave>', lambda event, arg=key: self.leave_deactive('<Leave>',arg))
+		'''
+
 		#Creating the 'recently drawn' variable
 		'''
 		This variable is currently unused! It can be used to support ctrl+z and ctrl+y shortcuts.
 		'''
 		self.recently_added = (circ_id, text_id)
+
+	def enter_active(self, event, key):
+		'''
+		This will activate once one of the widgets is entered
+		'''
+
+		id_tup = self.id_dict[str(key)]
+
+		circ = self.can.find_withtag(id_tup[0])
+		text = self.can.find_withtag(id_tup[1])
+
+		circ.config(state=tk.ACTIVE)
+		text.config(state=tk.ACTIVE)
+
+	def leave_deactive(self, event, key):
+		'''
+		This will activate once one of the widgets is entered
+		'''
+
+		id_tup = self.id_dict[str(key)]
+
+		circ = self.can.find_withtag(id_tup[0])
+		text = self.can.find_withtag(id_tup[1])
+
+		circ.config(state=tk.NORMAL)
+		text.config(state=tk.NORMAL)
+
 
 
 	def get_abrev_dict(self):
@@ -807,6 +857,7 @@ class Canvas(tk.Canvas):
 		char_keys = self.parent.player_manager.get_keys()
 
 		abrev_dict = {}
+		it_dict = {}
 
 		for name in char_keys:
 
@@ -823,12 +874,20 @@ class Canvas(tk.Canvas):
 				first_n = str(name_list[0])
 				last_n = str(name_list[-1])
 
-				first_l = first_n.upper()
-				last_l = last_n.upper()
+				first_l = first_n[0].upper()
+				last_l = last_n[0].upper()
 
 				abrev = first_l + last_l
 
-			abrev_dict[str(name)] = abrev
+			if abrev in abrev_dict.values():
+				if abrev in it_dict.keys():
+					i = int(it_dict[str(abrev)]) + 1
+				else:
+					it_dict[str(abrev)] = 0
+					i = 0
+				abrev_dict[str(name)] = str(abrev) + ' ' + str(i)
+			else:
+				abrev_dict[str(name)] = str(abrev)
 
 		return abrev_dict
 
@@ -837,6 +896,9 @@ class Canvas(tk.Canvas):
 		'''
 		Initial Draw method. This will initialize the canvas with all the players currently loaded into character_dict
 		'''
+
+		#We first want to clear the canvas, in case anything unwanted loaded (also for testing purposes).
+		self.can.delete('all')
 
 		#Setting the dictionary and building the draw-choords
 		self.coord_list = self.build_coords()
@@ -851,17 +913,26 @@ class Canvas(tk.Canvas):
 		n = 0
 		norm_hex_list = []
 		active_hex_list = []
+
+		#print('Drawing ' + str(len(self.char_dict)) + ' characters!')
 		
 		for x in self.char_dict:
-			hue = self.cm.hue_prop(n*self.angle_int,360)
 
-			hsl1 = (hue, 255, 235)
-			hsl2 = (hue, 255, 160)
+			#print('Drawing character ' + str(n))
+			#print(self.angle_int)
+			hue = self.cm.hue_prop(n*self.angle_int,math.tau)
+
+			s = 200 #255
+			l1 = 190 #235
+			l2 = l1 - 35 #220
+
+			hsl1 = (hue, s, l1)
+			hsl2 = (hue, s, l1 - 75)
 			new_hex1 = self.cm.hsl_to_hex(hsl1)
 			new_hex2 = self.cm.hsl_to_hex(hsl2)
 
-			hsl3 = (hue, 255, 220)
-			hsl4 = (hue, 255, 145)
+			hsl3 = (hue, s, l2)
+			hsl4 = (hue, s, l2 - 75)
 			new_hex3 = self.cm.hsl_to_hex(hsl3)
 			new_hex4 = self.cm.hsl_to_hex(hsl4)
 
@@ -869,6 +940,8 @@ class Canvas(tk.Canvas):
 			norm_hex_list.append(norm_hex_tup)
 			active_hex_tup = (new_hex1,new_hex2)
 			active_hex_list.append(active_hex_tup)
+
+			n = n + 1
 
 		i = 0
 
@@ -905,7 +978,7 @@ class color_manager():
 		'''
 		 
 		hue = int((float(num1)/float(num2))*255)
-		print(hue)
+		#print(hue)
 		return hue
 
 	def hue_mod(self,num1):
@@ -927,7 +1000,7 @@ class color_manager():
 
 		rgb = colorsys.hls_to_rgb(tup[0]/255,tup[2]/255,tup[1]/255)
 
-		print(rgb)
+		#print(rgb)
 
 		red = '%02x' % int(math.ceil(rgb[0]*255))
 		green = '%02x' % int(math.ceil(rgb[1]*255))
@@ -935,7 +1008,7 @@ class color_manager():
 
 		color_hex = '#'+red+green+blue
 		
-		print(color_hex)
+		#print('Color Hex: '+ color_hex)
 
 		return color_hex
 
@@ -1106,4 +1179,6 @@ Beautification Stuff:
 
 Known Bugs:
 	- If you submit 2 characters with the same, one will be 'name' and the other will be 'name (0)'. If you then edit 'name (0)' to be 'name' then select 'duplicate', you will get 'name (1)' and 'name (0)' is deleted.
+	- The circles and text boxes in the canvas become 'Active' (ie moused-over) seperately, making any click functions slightly more frustrating to use. [Perhaps try some opacity drop and put the text behind?]
+	- The last circle drawn always has the same hue as the first since the hue is determined by positioning around the circle
 '''
