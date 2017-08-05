@@ -8,7 +8,10 @@ Created on June 28, 2017
 import tkinter as tk
 import os
 import math
+<<<<<<< .merge_file_a01884
+=======
 import colorsys
+>>>>>>> .merge_file_a02416
 from tkinter.font import Font
 
 '''
@@ -699,15 +702,196 @@ class Canvas(tk.Canvas):
 		Constructor initiates the canvas. The parent must be a frame or a method that inherits from the frame class
 		'''
 
+<<<<<<< .merge_file_a01884
 		#Setting the local parent variable
 		self.parent = parent
 
 		#Setting the canvas properties
+		self.can = tk.Canvas(parent, bg = '#fff', bd=2, relief='groove', width=800, height=480)
+=======
+		#Setting local parent
+		self.parent = parent
+
+		#Setting the canvas properties
 		self.can = tk.Canvas(self.parent, bg = '#fff', bd=2, relief='groove')
+>>>>>>> .merge_file_a02416
 		self.can.grid(row=r0, column=c0, rowspan=5, columnspan=5, sticky=tk.N+tk.S+tk.E+tk.W, pady=5, padx=5)
 		self.can.columnconfigure(1,weight=1)
 		self.can.rowconfigure(1, weight=1)
 
+<<<<<<< .merge_file_a01884
+		#Defining some internal variables. In future iterations, circ_rad might not be hard-coded like this.
+		self.nullcount = 0
+		self.circ_rad = 20
+
+		#Getting the number of players
+		self.num_char = len(self.parent.player_manager.get_keys())
+
+		#Getting the startup angle increment, the center coordinate on startup, and the character radius based on the window dimensions
+		self.angle_inc = self.get_angle()
+		self.center = self.get_center()
+		self.big_rad = self.get_bigrad()
+
+	def get_angle(self):
+		'''
+		Returns the angle increment (in radians) for the number of current players
+		'''
+
+		#Getting the number of players since it's likely changed
+		self.num_char = len(self.parent.player_manager.get_keys())
+
+		#Getting the radians of the angle increment
+		try:
+			angle_inc = math.ceil(math.tau/float(self.num_char))
+		except ZeroDivisionError:
+			angle_inc = math.tau
+
+		return float(angle_inc)
+
+	def refresh_draw(self):
+		'''
+		Redraws all of the character elements and then displays them on the canvas. Essential campaign load support. This must also be called every time a character is added since the angle will change.
+		'''
+
+		#Need to clear the canvas before redrawing
+		for child in self.can.find_all():
+			self.can.delete(child)
+
+		#Recall get_angle to refresh the player-count and angle increment
+		self.angle_inc = self.get_angle()
+
+		#We need to keep track of all of the angles we've used
+		current_angle = float(0.0)
+
+		#Creating a character number iterator for use in the add_circle method
+		character_num = 0
+
+		#Simply re-calls the add_player command for each player in character_dict
+		for key in self.parent.player_manager.get_keys():
+			self.add_player(key,current_angle,int(character_num))
+			current_angle = float(current_angle) + float(self.angle_inc)
+			character_num += 1
+
+
+	def add_player(self,key,angle,char_int):
+		'''
+		Adds a player to the canvas. I'd like to have each caharcter display in a circle with their initials. I have to account for names with no spaces and names with no text.
+		'''
+
+		#Pulling the character name
+		char_name = str(key)
+
+		#Splitting the name at each space so only the non-space characters are added to the list
+		name_list = char_name.split()
+
+		#In the condition that a name is blank, I have it so the abreviation is set to null
+		if len(name_list) == 0:
+			abrev = 'Null'+str(self.nullcount)
+			self.nullcount = self.nullcount+1
+
+		#If the name is only a single word, (like my test characters), this will capitalize the first letter of the first word and set that as the character abrev
+		elif len(name_list) == 1:
+			first_n = name_list[0]
+			first_l = first_n[0].upper()
+			abrev = first_l
+
+		#If the name is made of two or more words, only the first and last are capitalized and the abrev is the concatination of these two wit hno spaces
+		else:
+			first_n = name_list[0].upper()
+			last_n = name_list[-1].upper()
+
+			first_l = first_n[0]
+			last_l = last_n[0]
+
+			abrev = str(first_l)+str(last_l)
+
+		#Since this method is already pretty long, here I call a 'build method' that actually adds a circle to the canvas.
+		self.add_circle(key,abrev,angle,char_int)
+
+	def add_circle(self,key,abrev,angle,char_int):
+		'''
+		Method responsible for actually drawing the circle
+		'''
+
+		#Finding where the center should go
+		center_x = self.center[1] + float(self.big_rad)*math.cos(angle)
+		center_y = self.center[0] + float(self.big_rad)*math.sin(angle)
+
+		#Converting to top-left and lower-right coordiantes for the oval
+		x0 = int(center_x) - int(self.circ_rad)
+		y0 = int(center_y) + int(self.circ_rad)
+		x1 = int(center_x) + int(self.circ_rad)
+		y1 = int(center_y) - int(self.circ_rad)
+
+		#Crreating tag tuple
+		tag_tup = (str(key), int(char_int))
+
+		#Actually adding the oval and text to the canvas
+		self.can.create_oval(x0,y0,x1,y1,tags=tag_tup)
+		self.can.create_text(center_x,center_y,text=str(abrev),tags=tag_tup)
+
+		'''
+		TODO:
+			PRESSING: Need a 'center circle' method to handle the center character. This current coad will need to be REWITTEN for this to work!
+			- Need the hue of each circle and font to change with each entry
+			- Needs the same thing to happen for the circle fill
+			- Need a custom font and custom thickness of the the circle borders
+			- Circles need an 'active' effect and a 'selected' effect
+			- Need to make circles selectable
+			- Need a handler to update the canvas height and width variables every time the window is resized
+			- Need to get selected character info pushed to the InfoColumn
+			- Need to add the relationship manager
+			- Need to write the relationship construction methods
+			... probably a bunch of other things I'm not thinking of right now.
+		'''
+
+
+	def get_center(self):
+		'''
+		Returns the center coordinate of the canvas widget. Should be called every time the parent window is resized
+		'''
+
+		#Make sure the geometry manager has created the widget
+		self.can.update_idletasks()
+
+		#Getting the center of the widget
+		self.widget_h = self.can.winfo_reqheight()
+		self.widget_w = self.can.winfo_reqwidth()
+
+		'''
+		TODO:
+			This get_center may not be working! Test and debug!
+		'''
+
+		print(self.can.winfo_reqheight())
+
+		#Gets the center pixle if it's odd and one of the top left of the four 'center' pixles
+		mid_h = math.ceil(float(self.widget_h)/2)
+		mid_w = math.ceil(float(self.widget_w)/2)
+
+		print((mid_h,mid_w))
+
+		return (mid_h,mid_w)
+
+	def get_bigrad(self):
+		'''
+		Returns the optimal radius of the large radius based on the current dimensions of the window.
+		'''
+
+		#Gets a method variable with the size of the smaller of the two dimensions
+		small_dim = min(self.can.winfo_reqheight(),self.can.winfo_reqwidth())
+
+		#Reducing the size of the large radius
+		bigrad = int(small_dim) - 30
+
+		#Makes sure the radius isn't negative. If it is, sets the minimum to 30 pixles.
+		if bigrad <= 0:
+			bigrad = 30
+
+		#Returns bigrad
+		return bigrad
+
+=======
 		#Adding a color manager
 		self.cm = color_manager(self)
 
@@ -1029,6 +1213,7 @@ class color_manager():
 		'''
 		STATUS: WORKING!
 		'''
+>>>>>>> .merge_file_a02416
 
 
 class MainMenu(tk.Menu):
@@ -1163,6 +1348,8 @@ class Application(tk.Frame):
 		self.rowconfigure(1, weight=1)
 		self.columnconfigure(1, weight=1)
 
+		self.player_manager = player_manager(self)
+        
 		self.player_manager = player_manager(self)
 
 		self.canvas = Canvas(self,1,1)
