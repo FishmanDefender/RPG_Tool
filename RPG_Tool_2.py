@@ -172,6 +172,47 @@ class player_manager():
 		self.parent.canvas.refresh_draw()
 
 
+class rel_manager():
+	'''
+	This class creates a list of relationship elements that take the form of 4-tuples and contains methods that act on this list
+	'''
+
+	def __init__(self,parent):
+		'''
+		The initialization of the relationship manager creates the rel_dict
+		'''
+
+		self.rel_dict = {}
+
+	def add_rel(self,parent,rel_tup):
+		'''
+		This method will add the relationship object to the dictionary with the first player used as the key
+		'''
+
+		if self.check_rel(rel_tup):
+			self.rel_dict[str(rel_tup[0])] = rel_tup
+		else:
+			'''
+			TODO:
+				- Throw error window saying that the relationship already exists
+			'''
+
+	def edit_rel(self,parent,key,new_tup):
+		'''
+		Sets the new_tup as the rel_tup for the player defined as 'key'
+		'''
+
+		self.rel_dict[str(key)] = new_tup
+
+	def rem_rel(self,parent,key):
+		'''
+		Removes a relationship entry
+		'''
+
+		del self.rel_dict[str(key)]
+
+
+
 class Edit_warn(tk.Toplevel):
 	'''
 	Creates a transient, top-level window that interupts the edit-push process of EditChar. It gives the user options to overwrite, iterate, or cancel the edit action.
